@@ -8,20 +8,23 @@ export interface ParseWordListResult {
   errors: string[];
 }
 
+const KOREAN_MEANING_START = /(?:~[\uAC00-\uD7A3\u3131-\u318E]|[\uAC00-\uD7A3\u3131-\u318E])/;
+
 /** 줄 안의 탭·연속 공백을 정리한다. */
 function normalizeLine(text: string): string {
   return text.replace(/\t+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /**
- * 한글(또는 ~+한글)이 시작되는 지점을 기준으로 단어(구)와 뜻을 나눈다.
+ * 한글(또는 ~+한글)이 처음 나오는 지점을 기준으로 단어(구)와 뜻을 나눈다.
  * make fun of ~을 놀리다 → 단어: make fun of / 뜻: ~을 놀리다
  */
 function splitAtKoreanMeaning(line: string): { word: string; meaning: string } | null {
-  const match = line.match(/^(.+?)\s*(~[\uAC00-\uD7A3\u3131-\u318E].*|[\uAC00-\uD7A3\u3131-\u318E].*)$/);
-  if (!match) return null;
-  const word = match[1].trim();
-  const meaning = match[2].trim();
+  const match = line.match(KOREAN_MEANING_START);
+  if (!match || match.index === undefined || match.index === 0) return null;
+
+  const word = line.slice(0, match.index).trim();
+  const meaning = line.slice(match.index).trim();
   return word && meaning ? { word, meaning } : null;
 }
 
@@ -37,6 +40,12 @@ function parseWordMeaningLine(raw: string): { word: string; meaning: string } | 
   if (!line) return null;
 
   return splitAtKoreanMeaning(line) ?? splitEnglishPhrase(line);
+}
+
+/** DB에 잘못 저장된 단어/뜻을 한 줄로 합쳐 다시 파싱한다. */
+export function normalizeStoredWordPair(word: string, meaning: string): ParsedWordPair {
+  const reparsed = parseWordMeaningLine(`${word} ${meaning}`.trim());
+  return reparsed ?? { word: word.trim(), meaning: meaning.trim() };
 }
 
 /** 여러 줄 텍스트를 단어/뜻 쌍으로 분리한다. */

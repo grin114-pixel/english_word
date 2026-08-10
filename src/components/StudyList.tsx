@@ -1,4 +1,5 @@
 import type { Word } from '../types';
+import { getDisplayWordPair } from '../utils/wordsToBulkText';
 import { SpeakButton } from './EnglishWordCell';
 
 interface StudyListProps {
@@ -17,15 +18,18 @@ export function StudyList({ words }: StudyListProps) {
           </tr>
         </thead>
         <tbody>
-          {words.map((word) => (
+          {words.map((word) => {
+            const display = getDisplayWordPair(word);
+            return (
             <tr key={word.id}>
               <td className="col-speak">
-                <SpeakButton word={word.word} compact />
+                <SpeakButton word={display.word} compact />
               </td>
-              <td className="cell-revealed col-word">{word.word}</td>
-              <td className="col-meaning">{word.meaning}</td>
+              <td className="cell-revealed col-word">{display.word}</td>
+              <td className="col-meaning">{display.meaning}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

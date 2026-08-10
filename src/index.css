@@ -88,6 +88,8 @@ button {
   border-radius: 8px;
   margin: -4px;
   padding: 4px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .app-header-brand:active {

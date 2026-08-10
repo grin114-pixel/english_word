@@ -1,7 +1,18 @@
 import { supabase } from '../lib/supabase';
 import type { Word } from '../types';
+import { normalizeStoredWordPair } from '../utils/parseWordList';
 import type { WordTestMode } from '../utils/wrongByMode';
 import { wrongFieldForMode } from '../utils/wrongByMode';
+
+function repairWordIfNeeded(word: Word): Word {
+  const normalized = normalizeStoredWordPair(word.word, word.meaning);
+  if (normalized.word === word.word && normalized.meaning === word.meaning) {
+    return word;
+  }
+
+  void updateWord(word.id, normalized);
+  return { ...word, word: normalized.word, meaning: normalized.meaning };
+}
 
 export async function fetchWords(deckId: string): Promise<Word[]> {
   const { data, error } = await supabase
@@ -11,7 +22,7 @@ export async function fetchWords(deckId: string): Promise<Word[]> {
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map(repairWordIfNeeded);
 }
 
 export interface NewWordInput {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ViewMode, Word } from '../types';
 import { isWrongForMode } from '../utils/wrongByMode';
+import { getDisplayWordPair } from '../utils/wordsToBulkText';
 import { EnglishWordCell } from './EnglishWordCell';
 
 type WordTestMode = Exclude<ViewMode, 'study' | 'sentence'>;
@@ -55,6 +56,7 @@ interface WordRowProps {
 function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
   const [revealed, setRevealed] = useState(false);
   const isWrong = isWrongForMode(word, mode);
+  const display = getDisplayWordPair(word);
 
   useEffect(() => {
     setRevealed(false);
@@ -67,16 +69,16 @@ function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
           type="checkbox"
           checked={isWrong}
           onChange={() => onToggleWrong(word)}
-          aria-label={`${word.word} 오답 표시`}
+          aria-label={`${display.word} 오답 표시`}
         />
       </td>
 
       {mode === 'word' && (
         <>
-          <td className="col-meaning">{word.meaning}</td>
+          <td className="col-meaning">{display.meaning}</td>
           <td className="col-word">
             <EnglishWordCell
-              word={word.word}
+              word={display.word}
               blind
               revealed={revealed}
               onReveal={() => setRevealed(true)}
@@ -90,10 +92,10 @@ function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
       {mode === 'meaning' && (
         <>
           <td className="col-word">
-            <EnglishWordCell word={word.word} compact showSpeak={false} />
+            <EnglishWordCell word={display.word} compact showSpeak={false} />
           </td>
           <td className="col-meaning">
-            <BlindCell text={word.meaning} revealed={revealed} onReveal={() => setRevealed(true)} />
+            <BlindCell text={display.meaning} revealed={revealed} onReveal={() => setRevealed(true)} />
           </td>
         </>
       )}

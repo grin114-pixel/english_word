@@ -1,23 +1,19 @@
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface AppHeaderProps {
   rightAction?: ReactNode;
+  onHomeClick?: () => void;
 }
 
-export function AppHeader({ rightAction }: AppHeaderProps) {
-  const navigate = useNavigate();
-
+export function AppHeader({ rightAction, onHomeClick }: AppHeaderProps) {
   return (
     <header className="app-header">
-      <div
+      <Link
+        to="/"
         className="app-header-brand"
-        onClick={() => navigate('/')}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') navigate('/');
-        }}
-        role="button"
-        tabIndex={0}
+        aria-label="홈으로 이동"
+        onClick={() => onHomeClick?.()}
       >
         <img src="/app-icon.png" alt="" className="app-header-icon" />
         <h1>
@@ -26,7 +22,7 @@ export function AppHeader({ rightAction }: AppHeaderProps) {
             v2
           </span>
         </h1>
-      </div>
+      </Link>
       {rightAction && <div className="app-header-action">{rightAction}</div>}
     </header>
   );

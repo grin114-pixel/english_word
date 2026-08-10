@@ -30,9 +30,16 @@ function AppRoutes() {
     navigate('/');
   };
 
+  const handleHomeClick = () => {
+    setShowAddDeck(false);
+    setShowDeckList(false);
+    setDeckRefreshKey((key) => key + 1);
+  };
+
   return (
     <>
       <AppHeader
+        onHomeClick={handleHomeClick}
         rightAction={
           <>
             <button
@@ -55,7 +62,7 @@ function AppRoutes() {
         }
       />
       <Routes>
-        <Route path="/" element={<DeckStudy latest refreshKey={deckRefreshKey} />} />
+        <Route path="/" element={<DeckStudy latest refreshKey={deckRefreshKey} key={deckRefreshKey} />} />
         <Route path="/deck/:deckId" element={<DeckStudy />} />
       </Routes>
 
