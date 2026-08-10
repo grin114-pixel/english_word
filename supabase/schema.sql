@@ -18,6 +18,7 @@ create table if not exists public.words (
   meaning text not null,
   is_wrong_word boolean not null default false,
   is_wrong_meaning boolean not null default false,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -28,9 +29,12 @@ create table if not exists public.sentences (
   user_id uuid,
   text text not null,
   is_wrong boolean not null default false,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now()
 );
 
+create index if not exists words_deck_sort_order_idx on public.words (deck_id, sort_order);
+create index if not exists sentences_deck_sort_order_idx on public.sentences (deck_id, sort_order);
 create index if not exists words_deck_id_idx on public.words (deck_id);
 create index if not exists sentences_deck_id_idx on public.sentences (deck_id);
 create index if not exists decks_user_id_idx on public.decks (user_id);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { EditDeckModal } from './EditDeckModal';
+import { EditIcon } from './EditIcon';
 import { Modal } from './Modal';
 import { deleteDeck, fetchDecks, updateDeckTitle } from '../services/decks';
 import { fetchSentences, syncDeckSentences } from '../services/sentences';
@@ -110,13 +111,13 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
                 <button
                   type="button"
                   className="icon-btn subtle"
-                  aria-label="카드 수정"
+                  aria-label="카드 편집"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingDeck(deck);
                   }}
                 >
-                  ✏️
+                  <EditIcon />
                 </button>
                 <button
                   type="button"

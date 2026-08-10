@@ -137,6 +137,26 @@ button {
   background: var(--accent-soft);
 }
 
+.app-header-refresh-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.app-header-refresh-btn:active {
+  background: var(--accent-soft);
+  transform: scale(0.94);
+}
+
 .app-header h1 {
   font-size: 19px;
   font-weight: 800;
@@ -186,11 +206,6 @@ button {
   font-size: 18px;
   font-weight: 800;
   margin: 0;
-}
-
-.sub-header-spacer {
-  width: 32px;
-  flex-shrink: 0;
 }
 
 .truncate {
@@ -320,6 +335,14 @@ button {
   padding: 6px;
   border-radius: 8px;
   color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-btn:active {
+  background: var(--accent-soft);
 }
 
 .icon-btn.subtle {
@@ -419,6 +442,18 @@ input[type='text']:focus,
 textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.form input[type='text']::selection,
+.form textarea::selection {
+  background: #d1d5db;
+  color: var(--text);
+}
+
+.form input[type='text']::-moz-selection,
+.form textarea::-moz-selection {
+  background: #d1d5db;
+  color: var(--text);
 }
 
 .form-error {

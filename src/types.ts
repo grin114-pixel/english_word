@@ -11,6 +11,7 @@ export interface Sentence {
   user_id: string | null;
   text: string;
   is_wrong: boolean;
+  sort_order: number;
   created_at: string;
 }
 
@@ -22,6 +23,7 @@ export interface Word {
   meaning: string;
   is_wrong_word: boolean;
   is_wrong_meaning: boolean;
+  sort_order: number;
   created_at: string;
 }
 

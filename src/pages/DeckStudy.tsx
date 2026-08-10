@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EditDeckModal } from '../components/EditDeckModal';
+import { EditIcon } from '../components/EditIcon';
 import { FilterBar } from '../components/FilterBar';
 import { SentenceTable } from '../components/SentenceTable';
 import { StudyList } from '../components/StudyList';
@@ -8,10 +9,11 @@ import { WordTable } from '../components/WordTable';
 import { fetchDeck, fetchDecks, updateDeckTitle } from '../services/decks';
 import {
   fetchSentences,
+  reorderSentences,
   setSentenceWrong,
   syncDeckSentences,
 } from '../services/sentences';
-import { fetchWords, setWordWrong, syncDeckWords } from '../services/words';
+import { fetchWords, reorderWords, setWordWrong, syncDeckWords } from '../services/words';
 import type { Deck, Sentence, ViewMode, Word } from '../types';
 import type { ParsedWordPair } from '../utils/parseWordList';
 import { shuffleArray } from '../utils/shuffle';
@@ -143,12 +145,27 @@ export function DeckStudy({
 
   const isEmpty = mode === 'sentence' ? visibleSentences.length === 0 : visibleWords.length === 0;
 
-  const handleShuffle = () => {
+  const handleShuffle = async () => {
+    if (!activeDeckId) return;
+
     if (mode === 'sentence') {
-      setSentenceOrder((prev) => shuffleArray(prev));
+      const nextOrder = shuffleArray(sentenceOrder);
+      setSentenceOrder(nextOrder);
+      try {
+        await reorderSentences(activeDeckId, nextOrder);
+      } catch {
+        setSentenceOrder(sentenceOrder);
+      }
       return;
     }
-    setOrder((prev) => shuffleArray(prev));
+
+    const nextOrder = shuffleArray(order);
+    setOrder(nextOrder);
+    try {
+      await reorderWords(activeDeckId, nextOrder);
+    } catch {
+      setOrder(order);
+    }
   };
 
   const handleToggleWordWrong = async (word: Word) => {
@@ -219,36 +236,33 @@ export function DeckStudy({
               ←
             </button>
           )}
-          {latest && <span className="sub-header-spacer" aria-hidden="true" />}
           <h2 className="truncate">{deck?.title ?? '카드'}</h2>
           <button
             type="button"
             className="icon-btn subtle"
             onClick={() => setShowEditDeck(true)}
-            aria-label="카드 수정"
+            aria-label="카드 편집"
           >
-            ✏️
+            <EditIcon />
           </button>
         </div>
 
         <div className="study-toolbar">
           <FilterBar mode={mode} onChange={setMode} />
-          <div className="study-toolbar-row">
-            {mode !== 'study' && (
-              <>
-                <button type="button" className="btn btn-outline small" onClick={handleShuffle}>
-                  🔀 랜덤
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-outline small${wrongOnly ? ' active' : ''}`}
-                  onClick={() => setWrongOnly((prev) => !prev)}
-                >
-                  틀린 것만 보기 {wrongCount > 0 ? `(${wrongCount})` : ''}
-                </button>
-              </>
-            )}
-          </div>
+          {mode !== 'study' && (
+            <div className="study-toolbar-row">
+              <button type="button" className="btn btn-outline small" onClick={handleShuffle}>
+                🔀 랜덤
+              </button>
+              <button
+                type="button"
+                className={`btn btn-outline small${wrongOnly ? ' active' : ''}`}
+                onClick={() => setWrongOnly((prev) => !prev)}
+              >
+                틀린 것만 보기 {wrongCount > 0 ? `(${wrongCount})` : ''}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -268,10 +282,10 @@ export function DeckStudy({
                   : '아직 등록된 단어가 없어요.'}
             </p>
             {!wrongOnly && mode !== 'sentence' && (
-              <p className="hint">카드 수정(✏️)에서 단어를 추가할 수 있어요.</p>
+              <p className="hint">편집 버튼에서 단어를 추가할 수 있어요.</p>
             )}
             {!wrongOnly && mode === 'sentence' && (
-              <p className="hint">카드 수정(✏️)에서 문장을 추가할 수 있어요.</p>
+              <p className="hint">편집 버튼에서 문장을 추가할 수 있어요.</p>
             )}
           </div>
         )}

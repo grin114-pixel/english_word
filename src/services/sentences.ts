@@ -36,16 +36,36 @@ async function fetchLegacySentencesFromWords(
     }));
 }
 
+async function getNextSortOrder(deckId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('sentences')
+    .select('sort_order')
+    .eq('deck_id', deckId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data?.sort_order ?? -1) + 1;
+}
+
+async function updateSentenceSortOrder(sentenceId: string, sortOrder: number): Promise<void> {
+  const { error } = await supabase.from('sentences').update({ sort_order: sortOrder }).eq('id', sentenceId);
+  if (error) throw error;
+}
+
 async function insertSentences(
   deckId: string,
   items: { text: string; is_wrong?: boolean }[],
+  startOrder = 0,
 ): Promise<Sentence[]> {
   if (items.length === 0) return [];
 
-  const rows = items.map(({ text, is_wrong }) => ({
+  const rows = items.map(({ text, is_wrong }, index) => ({
     deck_id: deckId,
     text: text.trim(),
     is_wrong: is_wrong ?? false,
+    sort_order: startOrder + index,
   }));
 
   const { data, error } = await supabase.from('sentences').insert(rows).select('*');
@@ -58,6 +78,7 @@ export async function fetchSentences(deckId: string): Promise<Sentence[]> {
     .from('sentences')
     .select('*')
     .eq('deck_id', deckId)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
 
   if (!error && data && data.length > 0) {
@@ -84,14 +105,17 @@ export async function fetchSentences(deckId: string): Promise<Sentence[]> {
     user_id: null,
     text: item.text,
     is_wrong: item.is_wrong,
+    sort_order: index,
     created_at: new Date().toISOString(),
   }));
 }
 
 export async function createSentences(deckId: string, texts: string[]): Promise<Sentence[]> {
+  const startOrder = await getNextSortOrder(deckId);
   return insertSentences(
     deckId,
     texts.map((text) => ({ text })),
+    startOrder,
   );
 }
 
@@ -111,6 +135,14 @@ export async function setSentenceWrong(sentenceId: string, isWrong: boolean): Pr
   if (sentenceId.startsWith('legacy-')) return;
   const { error } = await supabase.from('sentences').update({ is_wrong: isWrong }).eq('id', sentenceId);
   if (error) throw error;
+}
+
+export async function reorderSentences(_deckId: string, orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds
+      .filter((id) => !id.startsWith('legacy-'))
+      .map((sentenceId, index) => updateSentenceSortOrder(sentenceId, index)),
+  );
 }
 
 /** 기존 문장 목록과 수정된 목록을 줄 순서 기준으로 맞춰 동기화한다. */
@@ -144,11 +176,12 @@ export async function syncDeckSentences(
 
     if (existing && incoming) {
       await updateSentence(existing.id, incoming);
-      result.push({ ...existing, text: incoming.trim() });
+      await updateSentenceSortOrder(existing.id, i);
+      result.push({ ...existing, text: incoming.trim(), sort_order: i });
     } else if (existing && !incoming) {
       await deleteSentence(existing.id);
     } else if (!existing && incoming) {
-      const created = await createSentences(deckId, [incoming]);
+      const created = await insertSentences(deckId, [{ text: incoming }], i);
       result.push(created[0]);
     }
   }
