@@ -21,16 +21,10 @@ export interface NewWordInput {
 }
 
 export async function createWord({ deckId, word, meaning }: NewWordInput): Promise<Word> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('로그인 세션이 없습니다.');
-
   const { data, error } = await supabase
     .from('words')
     .insert({
       deck_id: deckId,
-      user_id: user.id,
       word: word.trim(),
       meaning: meaning.trim(),
     })
@@ -47,14 +41,8 @@ export async function createWords(
 ): Promise<Word[]> {
   if (words.length === 0) return [];
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('로그인 세션이 없습니다.');
-
   const rows = words.map(({ word, meaning }) => ({
     deck_id: deckId,
-    user_id: user.id,
     word: word.trim(),
     meaning: meaning.trim(),
   }));

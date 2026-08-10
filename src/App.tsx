@@ -4,7 +4,7 @@ import { AddDeckModal } from './components/AddDeckModal';
 import { AppHeader } from './components/AppHeader';
 import { ConfigNotice } from './components/ConfigNotice';
 import { DeckListModal } from './components/DeckListModal';
-import { useAnonymousSession } from './hooks/useAnonymousSession';
+import { useSupabaseReady } from './hooks/useSupabaseReady';
 import { createDeck } from './services/decks';
 import { createSentences } from './services/sentences';
 import { createWords } from './services/words';
@@ -74,18 +74,10 @@ function AppRoutes() {
 }
 
 function App() {
-  const { ready, error } = useAnonymousSession();
-
-  if (error) {
-    return <ConfigNotice message={error} />;
-  }
+  const { ready, error } = useSupabaseReady();
 
   if (!ready) {
-    return (
-      <div className="page">
-        <div className="splash">불러오는 중...</div>
-      </div>
-    );
+    return <ConfigNotice message={error ?? undefined} />;
   }
 
   return (

@@ -23,14 +23,9 @@ export async function fetchDeck(deckId: string): Promise<Deck | null> {
 }
 
 export async function createDeck(title: string): Promise<Deck> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('로그인 세션이 없습니다.');
-
   const { data, error } = await supabase
     .from('decks')
-    .insert({ title, user_id: user.id })
+    .insert({ title })
     .select('*')
     .single();
 

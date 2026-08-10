@@ -42,14 +42,8 @@ async function insertSentences(
 ): Promise<Sentence[]> {
   if (items.length === 0) return [];
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('로그인 세션이 없습니다.');
-
   const rows = items.map(({ text, is_wrong }) => ({
     deck_id: deckId,
-    user_id: user.id,
     text: text.trim(),
     is_wrong: is_wrong ?? false,
   }));
@@ -84,14 +78,10 @@ export async function fetchSentences(deckId: string): Promise<Sentence[]> {
     }
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return legacy.map((item, index) => ({
     id: `legacy-${deckId}-${index}`,
     deck_id: deckId,
-    user_id: user?.id ?? '',
+    user_id: null,
     text: item.text,
     is_wrong: item.is_wrong,
     created_at: new Date().toISOString(),

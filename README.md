@@ -14,7 +14,7 @@ Supabase 기반 PWA로 만든 영어 단어 암기 연습 앱입니다.
   - **랜덤** 버튼으로 순서 섞기
   - **틀렸어요** 체크로 오답 표시
   - **틀린 것만 보기** 토글로 오답만 모아보기
-- 로그인 없이 기기별로 Supabase 익명 인증(Anonymous Auth)을 사용해 데이터를 저장
+- 로그인 없이 Supabase에 저장 — **모든 기기·배포 URL에서 같은 데이터 공유**
 - PWA: 홈 화면에 설치해서 앱처럼 사용 가능
 
 ## 기술 스택
@@ -30,8 +30,8 @@ Supabase 기반 PWA로 만든 영어 단어 암기 연습 앱입니다.
 
 1. [supabase.com](https://supabase.com) 에서 새 프로젝트를 생성합니다.
 2. **Project Settings → API** 에서 `Project URL` 과 `anon public` 키를 확인합니다.
-3. **Authentication → Sign In / Providers** 에서 **Anonymous Sign-ins** 를 켭니다. (로그인 화면 없이 기기별 데이터 분리를 위해 필요합니다.)
-4. **SQL Editor** 에서 이 저장소의 `supabase/schema.sql` 파일 내용을 전체 붙여넣고 실행합니다. (`decks`, `words` 테이블과 RLS 정책이 생성됩니다.)
+3. **SQL Editor** 에서 이 저장소의 `supabase/schema.sql` 파일 내용을 전체 붙여넣고 실행합니다.
+   - 예전에 만든 DB가 있다면 `supabase/migration_shared_access.sql` 도 실행하세요.
 
 ### 2. 환경변수 설정
 
@@ -63,7 +63,7 @@ npm run preview
 - `decks`: 카드(덱). `id`, `title`, `user_id`, `created_at`
 - `words`: 카드에 속한 단어. `id`, `deck_id`, `word`, `meaning`, `sentence`, `is_wrong`, `user_id`, `created_at`
 
-모든 테이블은 RLS(Row Level Security)가 켜져 있어 각 사용자(익명 세션)는 자신이 만든 데이터만 조회/수정할 수 있습니다.
+모든 테이블은 RLS가 켜져 있지만 **공개 정책**으로, 같은 Supabase 프로젝트를 쓰는 모든 기기·브라우저에서 같은 데이터를 볼 수 있습니다.
 
 ## 참고 사항
 

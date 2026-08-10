@@ -1,6 +1,6 @@
 export interface Deck {
   id: string;
-  user_id: string;
+  user_id: string | null;
   title: string;
   created_at: string;
 }
@@ -8,7 +8,7 @@ export interface Deck {
 export interface Sentence {
   id: string;
   deck_id: string;
-  user_id: string;
+  user_id: string | null;
   text: string;
   is_wrong: boolean;
   created_at: string;
@@ -17,7 +17,7 @@ export interface Sentence {
 export interface Word {
   id: string;
   deck_id: string;
-  user_id: string;
+  user_id: string | null;
   word: string;
   meaning: string;
   is_wrong_word: boolean;

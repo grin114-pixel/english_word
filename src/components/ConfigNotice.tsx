@@ -10,7 +10,7 @@ export function ConfigNotice({ message }: { message?: string }) {
           <br />
           그리고 <code>supabase/schema.sql</code> 파일 내용을 Supabase SQL Editor에서 실행해주세요.
           <br />
-          Authentication → Sign In / Providers 에서 <b>Anonymous Sign-ins</b>도 켜주세요.
+          이미 예전 버전으로 만든 DB라면 <code>supabase/migration_shared_access.sql</code> 도 실행해주세요.
         </p>
         {message && message !== 'not-configured' && <p className="form-error">{message}</p>}
       </div>
