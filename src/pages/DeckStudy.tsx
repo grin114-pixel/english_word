@@ -127,6 +127,7 @@ export function DeckStudy({
     setWrongOnly(false);
     setRandomWordOrder(null);
     setRandomSentenceOrder(null);
+    window.scrollTo(0, 0);
   }, [mode]);
 
   const canonicalWordIds = useMemo(
