@@ -28,7 +28,6 @@ interface EditDeckModalProps {
 }
 
 export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditDeckModalProps) {
-  const [title, setTitle] = useState(initialTitle);
   const [bulkText, setBulkText] = useState('');
   const [sentenceText, setSentenceText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -70,10 +69,6 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('카드 이름을 입력해주세요.');
-      return;
-    }
     if (parsed.items.length === 0) {
       setError('단어 목록을 한 줄 이상 입력해주세요.');
       return;
@@ -92,7 +87,7 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
         return;
       }
       await onSubmit({
-        title: title.trim(),
+        title: initialTitle.trim(),
         words: wordResult.items,
         sentences: parsedSentences,
         existingWords,
@@ -109,24 +104,24 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
   };
 
   return (
-    <Modal title="카드 수정" onClose={onClose}>
+    <Modal title="" onClose={onClose} size="large" hideTitle>
       {loading ? (
         <p className="hint">불러오는 중...</p>
       ) : (
-        <form className="form" onSubmit={handleSubmit}>
-          <label className="field">
-            <span className="field-label">카드 이름</span>
-            <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </label>
+        <form className="form form-edit-deck" onSubmit={handleSubmit}>
+          <div className="field field-grow">
+            <BulkTextarea
+              value={bulkText}
+              onChange={setBulkText}
+              fill
+              label="단어 + 뜻"
+              toolbarAlign="label"
+            />
+          </div>
 
-          <label className="field">
-            <span className="field-label">단어 + 뜻</span>
-            <BulkTextarea value={bulkText} onChange={setBulkText} rows={6} />
-          </label>
-
-          <label className="field field-major-gap">
+          <label className="field field-grow field-major-gap">
             <span className="field-label">문장 + 해석</span>
-            <BulkTextarea value={sentenceText} onChange={setSentenceText} rows={6} showGrayToolbar={false} />
+            <BulkTextarea value={sentenceText} onChange={setSentenceText} fill showGrayToolbar={false} />
           </label>
 
           {error && <p className="form-error">{error}</p>}

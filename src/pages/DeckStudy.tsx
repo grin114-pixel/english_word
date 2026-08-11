@@ -277,9 +277,9 @@ export function DeckStudy({
           <h2 className="truncate">{deck?.title ?? '카드'}</h2>
           <button
             type="button"
-            className="icon-btn subtle"
+            className={`icon-btn subtle${latest ? ' faint' : ''}`}
             onClick={() => setShowEditDeck(true)}
-            aria-label="카드 편집"
+            aria-label="단어·문장 편집"
           >
             <EditIcon />
           </button>

@@ -6,9 +6,20 @@ interface BulkTextareaProps {
   onChange: (value: string) => void;
   rows?: number;
   showGrayToolbar?: boolean;
+  fill?: boolean;
+  label?: string;
+  toolbarAlign?: 'top' | 'label';
 }
 
-export function BulkTextarea({ value, onChange, rows = 6, showGrayToolbar = true }: BulkTextareaProps) {
+export function BulkTextarea({
+  value,
+  onChange,
+  rows = 6,
+  showGrayToolbar = true,
+  fill = false,
+  label,
+  toolbarAlign = 'top',
+}: BulkTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingRestoreRef = useRef<{ start: number; end: number; scrollTop: number } | null>(null);
 
@@ -38,29 +49,46 @@ export function BulkTextarea({ value, onChange, rows = 6, showGrayToolbar = true
     onChange(wrapped.value);
   };
 
+  const grayButton = (
+    <button
+      type="button"
+      className="btn btn-outline small"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={handleApplyGray}
+    >
+      회색 글자
+    </button>
+  );
+
   if (!showGrayToolbar) {
     return (
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} />
+      <textarea
+        className={fill ? 'bulk-textarea-fill' : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={fill ? undefined : rows}
+      />
     );
   }
 
   return (
-    <div className="bulk-textarea-wrap">
-      <div className="bulk-textarea-toolbar">
-        <button
-          type="button"
-          className="btn btn-outline small"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleApplyGray}
-        >
-          회색 글자
-        </button>
-      </div>
+    <div className={`bulk-textarea-wrap${fill ? ' bulk-textarea-wrap-fill' : ''}`}>
+      {toolbarAlign === 'label' && label ? (
+        <div className="field-label-row">
+          <span className="field-label">{label}</span>
+          {grayButton}
+        </div>
+      ) : (
+        <>
+          {showGrayToolbar && <div className="bulk-textarea-toolbar">{grayButton}</div>}
+        </>
+      )}
       <textarea
         ref={textareaRef}
+        className={fill ? 'bulk-textarea-fill' : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows={rows}
+        rows={fill ? undefined : rows}
       />
     </div>
   );

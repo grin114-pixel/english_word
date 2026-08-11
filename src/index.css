@@ -368,6 +368,10 @@ button {
   color: var(--text-muted);
 }
 
+.icon-btn.faint {
+  color: #d8dee8;
+}
+
 /* Modal */
 
 .modal-backdrop {
@@ -393,6 +397,75 @@ button {
   animation: modal-pop 0.18s ease-out;
 }
 
+.modal-backdrop-large {
+  padding: 0;
+}
+
+.modal-sheet-large {
+  max-width: 480px;
+  width: 100%;
+  height: 100svh;
+  max-height: 100svh;
+  border-radius: 0;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-sheet-large .modal-header {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.modal-sheet-large .modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.form-edit-deck {
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+
+.form-edit-deck .field-grow {
+  flex: 1;
+  min-height: 0;
+}
+
+.form-edit-deck .field-grow .field-label {
+  flex-shrink: 0;
+}
+
+.form-edit-deck .field-major-gap {
+  margin-top: 0;
+}
+
+.form-edit-deck .bulk-textarea-wrap-fill,
+.form-edit-deck .bulk-textarea-fill {
+  flex: 1;
+  min-height: 0;
+}
+
+.form-edit-deck .bulk-textarea-wrap-fill {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-edit-deck .bulk-textarea-fill {
+  height: 100%;
+  resize: none;
+}
+
+.form-edit-deck .form-actions {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
 @keyframes modal-pop {
   from {
     transform: scale(0.96);
@@ -414,6 +487,19 @@ button {
 .modal-header h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.modal-header-minimal {
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Form */

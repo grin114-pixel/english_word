@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { EditDeckTitleModal } from './EditDeckTitleModal';
+import { EditIcon } from './EditIcon';
 import { Modal } from './Modal';
 import { deleteDeck, fetchDecks } from '../services/decks';
 import type { Deck } from '../types';
@@ -41,6 +43,7 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
   const [decks, setDecks] = useState<DeckWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingDeck, setEditingDeck] = useState<DeckWithCount | null>(null);
 
   const loadDecks = async () => {
     setLoading(true);
@@ -83,8 +86,14 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
     }
   };
 
+  const handleEditTitle = (deckId: string, title: string) => {
+    setDecks((prev) => prev.map((deck) => (deck.id === deckId ? { ...deck, title } : deck)));
+    onDeckUpdated?.();
+  };
+
   return (
-    <Modal title="카드 목록" onClose={onClose}>
+    <>
+      <Modal title="카드 목록" onClose={onClose}>
       {loading && <p className="hint">불러오는 중...</p>}
       {error && <p className="form-error">{error}</p>}
 
@@ -106,6 +115,17 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
               <button
                 type="button"
                 className="icon-btn subtle"
+                aria-label="카드 이름 수정"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingDeck(deck);
+                }}
+              >
+                <EditIcon />
+              </button>
+              <button
+                type="button"
+                className="icon-btn subtle"
                 aria-label="카드 삭제"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -118,6 +138,16 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
           </li>
         ))}
       </ul>
-    </Modal>
+      </Modal>
+
+      {editingDeck && (
+        <EditDeckTitleModal
+          deckId={editingDeck.id}
+          initialTitle={editingDeck.title}
+          onClose={() => setEditingDeck(null)}
+          onSubmit={(title) => handleEditTitle(editingDeck.id, title)}
+        />
+      )}
+    </>
   );
 }
