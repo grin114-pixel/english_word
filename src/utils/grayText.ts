@@ -25,18 +25,47 @@ export function wrapGrayTags(
   return { value: next, selectionStart, selectionEnd };
 }
 
-function splitPlainLine(plain: string): { word: string; meaning: string } | null {
-  const koreanStart = plain.match(/(?:~[\uAC00-\uD7A3\u3131-\u318E]|[\uAC00-\uD7A3\u3131-\u318E])/);
-  if (koreanStart && koreanStart.index !== undefined && koreanStart.index > 0) {
-    return {
-      word: plain.slice(0, koreanStart.index).trim(),
-      meaning: plain.slice(koreanStart.index).trim(),
-    };
+const OPEN_BRACKET_TO_CLOSE: Record<string, string> = {
+  '(': ')',
+  '[': ']',
+  '{': '}',
+};
+
+/** 한글 경계 분리 뒤 단어 끝에 붙은 여는 괄호는 뜻 쪽으로 옮긴다. */
+function moveLeadingBracketsToMeaning(word: string, meaning: string): { word: string; meaning: string } {
+  let nextWord = word;
+  let nextMeaning = meaning;
+
+  while (nextWord.length > 0) {
+    const last = nextWord[nextWord.length - 1];
+    const close = OPEN_BRACKET_TO_CLOSE[last];
+    if (!close || nextMeaning.startsWith(close)) break;
+
+    nextMeaning = `${last}${nextMeaning}`;
+    nextWord = nextWord.slice(0, -1).trimEnd();
   }
 
-  const englishMatch = plain.match(/^([a-zA-Z][a-zA-Z\-']*(?:\s+[a-zA-Z][a-zA-Z\-']*)*)\s+(.+)$/);
-  if (!englishMatch) return null;
-  return { word: englishMatch[1].trim(), meaning: englishMatch[2].trim() };
+  return { word: nextWord.trim(), meaning: nextMeaning.trim() };
+}
+
+const ENGLISH_WORD_LINE =
+  /^([a-zA-Z][a-zA-Z\-']*(?:\s+[a-zA-Z][a-zA-Z\-']*)*)\s+(.+)$/;
+
+function splitPlainLine(plain: string): { word: string; meaning: string } | null {
+  const englishMatch = plain.match(ENGLISH_WORD_LINE);
+  if (englishMatch) {
+    return { word: englishMatch[1].trim(), meaning: englishMatch[2].trim() };
+  }
+
+  const koreanStart = plain.match(/(?:~[\uAC00-\uD7A3\u3131-\u318E]|[\uAC00-\uD7A3\u3131-\u318E])/);
+  if (koreanStart && koreanStart.index !== undefined && koreanStart.index > 0) {
+    return moveLeadingBracketsToMeaning(
+      plain.slice(0, koreanStart.index).trim(),
+      plain.slice(koreanStart.index).trim(),
+    );
+  }
+
+  return null;
 }
 
 function extractOriginalSegment(
@@ -102,6 +131,10 @@ export function splitLinePreservingGray(line: string): { word: string; meaning: 
   const plain = stripGrayMarkers(normalized);
   const plainSplit = splitPlainLine(plain);
   if (!plainSplit) return null;
+
+  if (!hasGrayMarkers(normalized)) {
+    return plainSplit.word && plainSplit.meaning ? plainSplit : null;
+  }
 
   const plainWordLen = plainSplit.word.length;
   let plainWordEnd = plainWordLen;
