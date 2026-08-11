@@ -1,18 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Modal } from './Modal';
+import { BulkTextarea } from './BulkTextarea';
+import { fetchDeck } from '../services/decks';
 import { fetchSentences } from '../services/sentences';
 import { fetchWords } from '../services/words';
 import { parseSentenceList, sentencesToText } from '../utils/parseSentenceList';
+import type { ParsedSentence } from '../utils/parseSentenceList';
 import { parseWordEntries } from '../utils/parseWordList';
 import type { ParsedWordPair } from '../utils/parseWordList';
+import type { Sentence, Word } from '../types';
 import { wordsToBulkText } from '../utils/wordsToBulkText';
 
 interface EditDeckModalProps {
   deckId: string;
   initialTitle: string;
   onClose: () => void;
-  onSubmit: (input: { title: string; words: ParsedWordPair[]; sentences: string[] }) => Promise<void>;
+  onSubmit: (input: {
+    title: string;
+    words: ParsedWordPair[];
+    sentences: ParsedSentence[];
+    existingWords: Word[];
+    existingSentences: Sentence[];
+    wordDraftText: string;
+    sentenceDraftText: string;
+  }) => Promise<void>;
 }
 
 export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditDeckModalProps) {
@@ -21,6 +33,9 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
   const [sentenceText, setSentenceText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [existingWords, setExistingWords] = useState<Word[]>([]);
+  const [existingSentences, setExistingSentences] = useState<Sentence[]>([]);
+
   const [error, setError] = useState<string | null>(null);
 
   const parsed = useMemo(() => parseWordEntries(bulkText), [bulkText]);
@@ -32,10 +47,16 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
       setLoading(true);
       setError(null);
       try {
-        const [words, sentences] = await Promise.all([fetchWords(deckId), fetchSentences(deckId)]);
+        const [deck, words, sentences] = await Promise.all([
+          fetchDeck(deckId),
+          fetchWords(deckId),
+          fetchSentences(deckId),
+        ]);
         if (cancelled) return;
-        setBulkText(wordsToBulkText(words));
-        setSentenceText(sentencesToText(sentences));
+        setExistingWords(words);
+        setExistingSentences(sentences);
+        setBulkText(deck?.word_draft_text ?? wordsToBulkText(words));
+        setSentenceText(deck?.sentence_draft_text ?? sentencesToText(sentences));
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : '불러오지 못했어요.');
       } finally {
@@ -74,6 +95,10 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
         title: title.trim(),
         words: wordResult.items,
         sentences: parsedSentences,
+        existingWords,
+        existingSentences,
+        wordDraftText: bulkText,
+        sentenceDraftText: sentenceText,
       });
       onClose();
     } catch (err) {
@@ -96,20 +121,12 @@ export function EditDeckModal({ deckId, initialTitle, onClose, onSubmit }: EditD
 
           <label className="field">
             <span className="field-label">단어 + 뜻</span>
-            <textarea value={bulkText} onChange={(e) => setBulkText(e.target.value)} rows={6} />
-            <span className="hint">
-              한 줄에 「단어(구) 뜻」 형식으로 입력하세요. 예: make fun of ~을 놀리다, 비웃다
-              {parsed.items.length > 0 && ` (${parsed.items.length}개 인식됨)`}
-            </span>
+            <BulkTextarea value={bulkText} onChange={setBulkText} rows={6} />
           </label>
 
-          <label className="field">
-            <span className="field-label">문장 (선택)</span>
-            <textarea value={sentenceText} onChange={(e) => setSentenceText(e.target.value)} rows={6} />
-            <span className="hint">
-              단어와 별개로, 한 줄에 문장 하나씩 입력하세요.
-              {parsedSentences.length > 0 && ` (${parsedSentences.length}개 인식됨)`}
-            </span>
+          <label className="field field-major-gap">
+            <span className="field-label">문장 + 해석</span>
+            <BulkTextarea value={sentenceText} onChange={setSentenceText} rows={6} showGrayToolbar={false} />
           </label>
 
           {error && <p className="form-error">{error}</p>}

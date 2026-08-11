@@ -1,3 +1,5 @@
+import { splitLinePreservingGray } from './grayText';
+
 export interface ParsedWordPair {
   word: string;
   meaning: string;
@@ -8,38 +10,44 @@ export interface ParseWordListResult {
   errors: string[];
 }
 
-const KOREAN_MEANING_START = /(?:~[\uAC00-\uD7A3\u3131-\u318E]|[\uAC00-\uD7A3\u3131-\u318E])/;
-
 /** 줄 안의 탭·연속 공백을 정리한다. */
 function normalizeLine(text: string): string {
   return text.replace(/\t+/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-/**
- * 한글(또는 ~+한글)이 처음 나오는 지점을 기준으로 단어(구)와 뜻을 나눈다.
- * make fun of ~을 놀리다 → 단어: make fun of / 뜻: ~을 놀리다
- */
-function splitAtKoreanMeaning(line: string): { word: string; meaning: string } | null {
-  const match = line.match(KOREAN_MEANING_START);
-  if (!match || match.index === undefined || match.index === 0) return null;
-
-  const word = line.slice(0, match.index).trim();
-  const meaning = line.slice(match.index).trim();
-  return word && meaning ? { word, meaning } : null;
-}
-
-/** 영어 단어(구) + 나머지 뜻 패턴 (한글이 없을 때 폴백) */
-function splitEnglishPhrase(line: string): { word: string; meaning: string } | null {
-  const match = line.match(/^([a-zA-Z][a-zA-Z\-']*(?:\s+[a-zA-Z][a-zA-Z\-']*)*)\s+(.+)$/);
-  if (!match) return null;
-  return { word: match[1].trim(), meaning: match[2].trim() };
 }
 
 function parseWordMeaningLine(raw: string): { word: string; meaning: string } | null {
   const line = normalizeLine(raw);
   if (!line) return null;
 
-  return splitAtKoreanMeaning(line) ?? splitEnglishPhrase(line);
+  return splitLinePreservingGray(line);
+}
+
+function isValidWordLine(raw: string): boolean {
+  return parseWordMeaningLine(raw) !== null;
+}
+
+/** 편집창 빈 줄(페이지 구분) 뒤 단어 인덱스 목록 (0-based) */
+export function getPageBreakIndices(draftText: string): number[] {
+  if (!draftText.trim()) return [];
+
+  const breaks: number[] = [];
+  let wordIndex = -1;
+  let inEmptyRun = false;
+
+  for (const line of draftText.split(/\r?\n/)) {
+    if (!line.trim()) {
+      if (wordIndex >= 0 && !inEmptyRun) breaks.push(wordIndex);
+      inEmptyRun = true;
+      continue;
+    }
+
+    if (!isValidWordLine(line)) continue;
+
+    inEmptyRun = false;
+    wordIndex += 1;
+  }
+
+  return breaks;
 }
 
 /** DB에 잘못 저장된 단어/뜻을 한 줄로 합쳐 다시 파싱한다. */

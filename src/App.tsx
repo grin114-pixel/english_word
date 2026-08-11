@@ -8,7 +8,41 @@ import { useSupabaseReady } from './hooks/useSupabaseReady';
 import { createDeck } from './services/decks';
 import { createSentences } from './services/sentences';
 import { createWords } from './services/words';
+import type { ParsedSentence } from './utils/parseSentenceList';
 import { DeckStudy } from './pages/DeckStudy';
+
+function ListIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M8 6h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 12h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="4" cy="6" r="1" fill="currentColor" />
+      <circle cx="4" cy="12" r="1" fill="currentColor" />
+      <circle cx="4" cy="18" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M21 12a9 9 0 1 1-2.64-6.36"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M21 3v6h-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -19,9 +53,14 @@ function AppRoutes() {
   const handleCreateDeck = async (input: {
     title: string;
     words: { word: string; meaning: string }[];
-    sentences: string[];
+    sentences: ParsedSentence[];
+    wordDraftText: string;
+    sentenceDraftText: string;
   }) => {
-    const deck = await createDeck(input.title);
+    const deck = await createDeck(input.title, {
+      wordDraftText: input.wordDraftText,
+      sentenceDraftText: input.sentenceDraftText,
+    });
     await Promise.all([
       createWords(deck.id, input.words),
       createSentences(deck.id, input.sentences),
@@ -48,19 +87,19 @@ function AppRoutes() {
           <>
             <button
               type="button"
-              className="app-header-list-btn"
-              onClick={() => setShowDeckList(true)}
-              aria-label="카드 목록 보기"
-            >
-              리스트
-            </button>
-            <button
-              type="button"
               className="app-header-refresh-btn"
               onClick={handleRefresh}
               aria-label="새로고침"
             >
               <RefreshIcon />
+            </button>
+            <button
+              type="button"
+              className="app-header-list-btn"
+              onClick={() => setShowDeckList(true)}
+              aria-label="카드 목록 보기"
+            >
+              <ListIcon />
             </button>
             <button
               type="button"
@@ -107,23 +146,3 @@ function App() {
 }
 
 export default App;
-
-function RefreshIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M21 12a9 9 0 1 1-2.64-6.36"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M21 3v6h-6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}

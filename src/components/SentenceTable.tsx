@@ -5,9 +5,14 @@ import { splitSentenceByParentheses } from '../utils/maskParentheses';
 interface SentenceTableProps {
   sentences: Sentence[];
   onToggleWrong: (sentence: Sentence) => void;
+  pageBreakAfterSentenceIds?: Set<string>;
 }
 
-export function SentenceTable({ sentences, onToggleWrong }: SentenceTableProps) {
+export function SentenceTable({
+  sentences,
+  onToggleWrong,
+  pageBreakAfterSentenceIds,
+}: SentenceTableProps) {
   return (
     <div className="word-table-wrap">
       <table className="word-table">
@@ -19,7 +24,12 @@ export function SentenceTable({ sentences, onToggleWrong }: SentenceTableProps) 
         </thead>
         <tbody>
           {sentences.map((sentence) => (
-            <SentenceRow key={sentence.id} sentence={sentence} onToggleWrong={onToggleWrong} />
+            <SentenceRow
+              key={sentence.id}
+              sentence={sentence}
+              onToggleWrong={onToggleWrong}
+              pageBreakAfter={pageBreakAfterSentenceIds?.has(sentence.id) ?? false}
+            />
           ))}
         </tbody>
       </table>
@@ -30,11 +40,18 @@ export function SentenceTable({ sentences, onToggleWrong }: SentenceTableProps) 
 interface SentenceRowProps {
   sentence: Sentence;
   onToggleWrong: (sentence: Sentence) => void;
+  pageBreakAfter: boolean;
 }
 
-function SentenceRow({ sentence, onToggleWrong }: SentenceRowProps) {
+function SentenceRow({ sentence, onToggleWrong, pageBreakAfter }: SentenceRowProps) {
+  const meaning = sentence.meaning?.trim() ?? '';
+
   return (
-    <tr className={sentence.is_wrong ? 'is-wrong' : undefined}>
+    <tr
+      className={[sentence.is_wrong ? 'is-wrong' : '', pageBreakAfter ? 'page-break-after' : '']
+        .filter(Boolean)
+        .join(' ') || undefined}
+    >
       <td className="col-check">
         <input
           type="checkbox"
@@ -44,7 +61,10 @@ function SentenceRow({ sentence, onToggleWrong }: SentenceRowProps) {
         />
       </td>
       <td>
-        <SentenceCell text={sentence.text} />
+        <div className="sentence-pair">
+          <SentenceCell text={sentence.text} />
+          {meaning && <p className="sentence-meaning">{meaning}</p>}
+        </div>
       </td>
     </tr>
   );
@@ -61,7 +81,7 @@ function SentenceCell({ text }: { text: string }) {
   let parenIndex = 0;
 
   return (
-    <span className="sentence-cell">
+    <p className="sentence-text">
       {parts.map((part, index) => {
         if (part.type === 'text') {
           return <span key={index}>{part.content}</span>;
@@ -89,6 +109,6 @@ function SentenceCell({ text }: { text: string }) {
           </span>
         );
       })}
-    </span>
+    </p>
   );
 }

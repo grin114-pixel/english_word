@@ -2,6 +2,8 @@ export interface Deck {
   id: string;
   user_id: string | null;
   title: string;
+  word_draft_text: string | null;
+  sentence_draft_text: string | null;
   created_at: string;
 }
 
@@ -10,6 +12,7 @@ export interface Sentence {
   deck_id: string;
   user_id: string | null;
   text: string;
+  meaning: string;
   is_wrong: boolean;
   sort_order: number;
   created_at: string;

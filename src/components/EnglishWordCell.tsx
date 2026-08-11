@@ -1,5 +1,6 @@
-import type { MouseEvent } from 'react';
-import { playPronunciation } from '../utils/pronunciation';
+import type { MouseEvent, ReactNode } from 'react';
+import { playPronunciation, prefetchPronunciation } from '../utils/pronunciation';
+import { GrayText, plainTextForSpeech } from './GrayText';
 
 function SpeakerIcon() {
   return (
@@ -22,25 +23,49 @@ interface SpeakButtonProps {
 }
 
 export function SpeakButton({ word, label = '발음 듣기', compact = false }: SpeakButtonProps) {
-  const handleSpeak = async (e: MouseEvent) => {
+  const speechText = plainTextForSpeech(word);
+
+  const handleSpeak = (e: MouseEvent) => {
     e.stopPropagation();
-    await playPronunciation(word);
+    playPronunciation(speechText);
+  };
+
+  const handleWarm = () => {
+    prefetchPronunciation(speechText);
   };
 
   if (compact) {
     return (
-      <button type="button" className="speak-btn-icon" onClick={handleSpeak} aria-label={`${word} ${label}`}>
+      <button
+        type="button"
+        className="speak-btn-icon"
+        onClick={handleSpeak}
+        onMouseEnter={handleWarm}
+        onTouchStart={handleWarm}
+        aria-label={`${word} ${label}`}
+      >
         <SpeakerIcon />
       </button>
     );
   }
 
   return (
-    <button type="button" className="speak-btn" onClick={handleSpeak} aria-label={`${word} ${label}`}>
+    <button
+      type="button"
+      className="speak-btn"
+      onClick={handleSpeak}
+      onMouseEnter={handleWarm}
+      onTouchStart={handleWarm}
+      aria-label={`${word} ${label}`}
+    >
       <SpeakerIcon />
       <span>{label}</span>
     </button>
   );
+}
+
+function renderWordText(word: string): ReactNode {
+  return <GrayText text={word} />;
 }
 
 interface EnglishWordCellProps {
@@ -80,7 +105,7 @@ export function EnglishWordCell({
   if (compact) {
     return (
       <span className="english-word-cell compact">
-        <span className="cell-revealed">{word}</span>
+        <span className="cell-revealed">{renderWordText(word)}</span>
         {showSpeak && <SpeakButton word={word} compact />}
       </span>
     );
@@ -88,7 +113,7 @@ export function EnglishWordCell({
 
   return (
     <div className="english-word-cell">
-      <span className="cell-revealed">{word}</span>
+      <span className="cell-revealed">{renderWordText(word)}</span>
       {showSpeak && <SpeakButton word={word} />}
     </div>
   );

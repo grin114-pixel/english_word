@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ViewMode, Word } from '../types';
+import { playPronunciation } from '../utils/pronunciation';
 import { isWrongForMode } from '../utils/wrongByMode';
 import { getDisplayWordPair } from '../utils/wordsToBulkText';
+import { GrayText, plainTextForSpeech } from './GrayText';
 import { EnglishWordCell } from './EnglishWordCell';
 
 type WordTestMode = Exclude<ViewMode, 'study' | 'sentence'>;
@@ -10,9 +12,10 @@ interface WordTableProps {
   words: Word[];
   mode: WordTestMode;
   onToggleWrong: (word: Word) => void;
+  pageBreakAfterWordIds?: Set<string>;
 }
 
-export function WordTable({ words, mode, onToggleWrong }: WordTableProps) {
+export function WordTable({ words, mode, onToggleWrong, pageBreakAfterWordIds }: WordTableProps) {
   const headers =
     mode === 'word'
       ? [
@@ -39,7 +42,13 @@ export function WordTable({ words, mode, onToggleWrong }: WordTableProps) {
         </thead>
         <tbody>
           {words.map((word) => (
-            <WordRow key={word.id} word={word} mode={mode} onToggleWrong={onToggleWrong} />
+            <WordRow
+              key={word.id}
+              word={word}
+              mode={mode}
+              onToggleWrong={onToggleWrong}
+              pageBreakAfter={pageBreakAfterWordIds?.has(word.id) ?? false}
+            />
           ))}
         </tbody>
       </table>
@@ -51,9 +60,10 @@ interface WordRowProps {
   word: Word;
   mode: WordTestMode;
   onToggleWrong: (word: Word) => void;
+  pageBreakAfter: boolean;
 }
 
-function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
+function WordRow({ word, mode, onToggleWrong, pageBreakAfter }: WordRowProps) {
   const [revealed, setRevealed] = useState(false);
   const isWrong = isWrongForMode(word, mode);
   const display = getDisplayWordPair(word);
@@ -62,8 +72,17 @@ function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
     setRevealed(false);
   }, [mode, word.id]);
 
+  const handleReveal = () => {
+    setRevealed(true);
+    void playPronunciation(plainTextForSpeech(display.word));
+  };
+
   return (
-    <tr className={isWrong ? 'is-wrong' : undefined}>
+    <tr
+      className={[isWrong ? 'is-wrong' : '', pageBreakAfter ? 'page-break-after' : '']
+        .filter(Boolean)
+        .join(' ') || undefined}
+    >
       <td className="col-check">
         <input
           type="checkbox"
@@ -75,13 +94,15 @@ function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
 
       {mode === 'word' && (
         <>
-          <td className="col-meaning">{display.meaning}</td>
+          <td className="col-meaning">
+            <GrayText text={display.meaning} />
+          </td>
           <td className="col-word">
             <EnglishWordCell
               word={display.word}
               blind
               revealed={revealed}
-              onReveal={() => setRevealed(true)}
+              onReveal={handleReveal}
               compact
               showSpeak={false}
             />
@@ -95,7 +116,7 @@ function WordRow({ word, mode, onToggleWrong }: WordRowProps) {
             <EnglishWordCell word={display.word} compact showSpeak={false} />
           </td>
           <td className="col-meaning">
-            <BlindCell text={display.meaning} revealed={revealed} onReveal={() => setRevealed(true)} />
+            <BlindCell text={display.meaning} revealed={revealed} onReveal={handleReveal} />
           </td>
         </>
       )}
@@ -112,7 +133,13 @@ function BlindCell({
   revealed: boolean;
   onReveal: () => void;
 }) {
-  if (revealed) return <span className="cell-revealed">{text}</span>;
+  if (revealed) {
+    return (
+      <span className="cell-revealed">
+        <GrayText text={text} />
+      </span>
+    );
+  }
   return (
     <button type="button" className="blind-inline" onClick={onReveal}>
       •••

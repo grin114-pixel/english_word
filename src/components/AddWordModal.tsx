@@ -51,10 +51,6 @@ export function AddWordModal({ onClose, onSubmit }: AddWordModalProps) {
             onChange={(e) => setBulkText(e.target.value)}
             rows={6}
           />
-          <span className="hint">
-            한 줄에 「단어(구) 뜻」 형식으로 입력하세요. 예: make fun of ~을 놀리다, 비웃다
-            {parsed.items.length > 0 && ` (${parsed.items.length}개 인식됨)`}
-          </span>
         </label>
 
         {error && <p className="form-error">{error}</p>}

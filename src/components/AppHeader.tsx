@@ -16,12 +16,6 @@ export function AppHeader({ rightAction, onHomeClick }: AppHeaderProps) {
         onClick={() => onHomeClick?.()}
       >
         <img src="/app-icon.png" alt="" className="app-header-icon" />
-        <h1>
-          단어 암기장
-          <span className="app-version-badge" aria-hidden="true">
-            v2
-          </span>
-        </h1>
       </Link>
       {rightAction && <div className="app-header-action">{rightAction}</div>}
     </header>

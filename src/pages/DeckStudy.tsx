@@ -6,16 +6,20 @@ import { FilterBar } from '../components/FilterBar';
 import { SentenceTable } from '../components/SentenceTable';
 import { StudyList } from '../components/StudyList';
 import { WordTable } from '../components/WordTable';
-import { fetchDeck, fetchDecks, updateDeckTitle } from '../services/decks';
+import { fetchDeck, fetchDecks, updateDeck } from '../services/decks';
 import {
   fetchSentences,
-  reorderSentences,
   setSentenceWrong,
   syncDeckSentences,
 } from '../services/sentences';
-import { fetchWords, reorderWords, setWordWrong, syncDeckWords } from '../services/words';
+import { fetchWords, setWordWrong, syncDeckWords } from '../services/words';
 import type { Deck, Sentence, ViewMode, Word } from '../types';
 import type { ParsedWordPair } from '../utils/parseWordList';
+import type { ParsedSentence } from '../utils/parseSentenceList';
+import { mergeSentenceRowsForDisplay } from '../utils/parseSentenceList';
+import { getPageBreakSentenceIds, getPageBreakWordIds } from '../utils/pageBreaks';
+import { getSentenceIdsInDraftOrder } from '../utils/sentenceOrder';
+import { getWordIdsInDraftOrder } from '../utils/wordOrder';
 import { shuffleArray } from '../utils/shuffle';
 import { isWrongForMode, wrongFieldForMode } from '../utils/wrongByMode';
 
@@ -34,13 +38,13 @@ export function DeckStudy({
   const [deck, setDeck] = useState<Deck | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [sentences, setSentences] = useState<Sentence[]>([]);
-  const [order, setOrder] = useState<string[]>([]);
-  const [sentenceOrder, setSentenceOrder] = useState<string[]>([]);
   const [mode, setMode] = useState<ViewMode>('study');
   const [wrongOnly, setWrongOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditDeck, setShowEditDeck] = useState(false);
+  const [randomWordOrder, setRandomWordOrder] = useState<string[] | null>(null);
+  const [randomSentenceOrder, setRandomSentenceOrder] = useState<string[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,8 +109,8 @@ export function DeckStudy({
         setDeck(deckData);
         setWords(wordsData);
         setSentences(sentencesData);
-        setOrder(wordsData.map((w) => w.id));
-        setSentenceOrder(sentencesData.map((s) => s.id));
+        setRandomWordOrder(null);
+        setRandomSentenceOrder(null);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : '불러오지 못했어요.');
       } finally {
@@ -121,50 +125,70 @@ export function DeckStudy({
 
   useEffect(() => {
     setWrongOnly(false);
+    setRandomWordOrder(null);
+    setRandomSentenceOrder(null);
   }, [mode]);
+
+  const canonicalWordIds = useMemo(
+    () => getWordIdsInDraftOrder(deck?.word_draft_text, words),
+    [deck?.word_draft_text, words],
+  );
 
   const visibleWords = useMemo(() => {
     const byId = new Map(words.map((w) => [w.id, w]));
-    const ordered = order.map((id) => byId.get(id)).filter((w): w is Word => Boolean(w));
+    const activeOrder =
+      mode === 'study' ? canonicalWordIds : (randomWordOrder ?? canonicalWordIds);
+    const ordered = activeOrder.map((id) => byId.get(id)).filter((w): w is Word => Boolean(w));
     if (mode === 'study' || mode === 'sentence' || !wrongOnly) return ordered;
     return ordered.filter((w) => isWrongForMode(w, mode));
-  }, [words, order, wrongOnly, mode]);
+  }, [words, canonicalWordIds, randomWordOrder, wrongOnly, mode]);
+
+  const mergedSentences = useMemo(
+    () => mergeSentenceRowsForDisplay(sentences),
+    [sentences],
+  );
+
+  const canonicalSentenceIds = useMemo(
+    () => getSentenceIdsInDraftOrder(deck?.sentence_draft_text, sentences),
+    [deck?.sentence_draft_text, sentences],
+  );
 
   const visibleSentences = useMemo(() => {
-    const byId = new Map(sentences.map((s) => [s.id, s]));
-    const ordered = sentenceOrder.map((id) => byId.get(id)).filter((s): s is Sentence => Boolean(s));
+    const byId = new Map(mergedSentences.map((s) => [s.id, s]));
+    const activeOrder = randomSentenceOrder ?? canonicalSentenceIds;
+    const ordered = activeOrder
+      .map((id) => byId.get(id))
+      .filter((s): s is Sentence => Boolean(s));
     if (!wrongOnly) return ordered;
     return ordered.filter((s) => s.is_wrong);
-  }, [sentences, sentenceOrder, wrongOnly]);
+  }, [mergedSentences, canonicalSentenceIds, randomSentenceOrder, wrongOnly]);
+
+  const pageBreakAfterWordIds = useMemo(
+    () => getPageBreakWordIds(deck?.word_draft_text, words),
+    [deck?.word_draft_text, words],
+  );
+
+  const pageBreakAfterSentenceIds = useMemo(
+    () => getPageBreakSentenceIds(deck?.sentence_draft_text, sentences),
+    [deck?.sentence_draft_text, sentences],
+  );
 
   const wrongCount = useMemo(() => {
     if (mode === 'study') return 0;
-    if (mode === 'sentence') return sentences.filter((s) => s.is_wrong).length;
+    if (mode === 'sentence') return mergedSentences.filter((s) => s.is_wrong).length;
     return words.filter((w) => isWrongForMode(w, mode)).length;
-  }, [words, sentences, mode]);
+  }, [words, mergedSentences, mode]);
 
   const isEmpty = mode === 'sentence' ? visibleSentences.length === 0 : visibleWords.length === 0;
 
-  const handleShuffle = async () => {
-    if (!activeDeckId) return;
-
+  const handleShuffle = () => {
     if (mode === 'sentence') {
-      const nextOrder = shuffleArray(sentenceOrder);
-      setSentenceOrder(nextOrder);
-      try {
-        await reorderSentences(activeDeckId, nextOrder);
-      } catch {
-        setSentenceOrder(sentenceOrder);
-      }
+      setRandomSentenceOrder(shuffleArray(canonicalSentenceIds));
       return;
     }
 
-    const nextOrder = shuffleArray(order);
-    setOrder(nextOrder);
-    try {
-      await reorderWords(activeDeckId, nextOrder);
-    } catch {
-      setOrder(order);
+    if (mode === 'word' || mode === 'meaning') {
+      setRandomWordOrder(shuffleArray(canonicalWordIds));
     }
   };
 
@@ -195,23 +219,36 @@ export function DeckStudy({
   const handleEditDeck = async (input: {
     title: string;
     words: ParsedWordPair[];
-    sentences: string[];
+    sentences: ParsedSentence[];
+    existingWords: Word[];
+    existingSentences: Sentence[];
+    wordDraftText: string;
+    sentenceDraftText: string;
   }) => {
     if (!activeDeckId) return;
-    const [existingWords, existingSentences] = await Promise.all([
-      fetchWords(activeDeckId),
-      fetchSentences(activeDeckId),
-    ]);
-    await updateDeckTitle(activeDeckId, input.title);
+    await updateDeck(activeDeckId, {
+      title: input.title,
+      wordDraftText: input.wordDraftText,
+      sentenceDraftText: input.sentenceDraftText,
+    });
     const [syncedWords, syncedSentences] = await Promise.all([
-      syncDeckWords(activeDeckId, existingWords, input.words),
-      syncDeckSentences(activeDeckId, existingSentences, input.sentences),
+      syncDeckWords(activeDeckId, input.existingWords, input.words),
+      syncDeckSentences(activeDeckId, input.existingSentences, input.sentences),
     ]);
-    setDeck((prev) => (prev ? { ...prev, title: input.title } : prev));
+    setDeck((prev) =>
+      prev
+        ? {
+            ...prev,
+            title: input.title,
+            word_draft_text: input.wordDraftText,
+            sentence_draft_text: input.sentenceDraftText,
+          }
+        : prev,
+    );
     setWords(syncedWords);
     setSentences(syncedSentences);
-    setOrder(syncedWords.map((w) => w.id));
-    setSentenceOrder(syncedSentences.map((s) => s.id));
+    setRandomWordOrder(null);
+    setRandomSentenceOrder(null);
   };
 
   if (latest && hasNoDecks && !loading && !error) {
@@ -290,14 +327,27 @@ export function DeckStudy({
           </div>
         )}
 
-        {mode === 'study' && <StudyList words={visibleWords} />}
+        {mode === 'study' && (
+          <StudyList words={visibleWords} pageBreakAfterWordIds={pageBreakAfterWordIds} />
+        )}
 
         {(mode === 'word' || mode === 'meaning') && (
-          <WordTable words={visibleWords} mode={mode} onToggleWrong={handleToggleWordWrong} />
+          <WordTable
+            words={visibleWords}
+            mode={mode}
+            onToggleWrong={handleToggleWordWrong}
+            pageBreakAfterWordIds={randomWordOrder ? undefined : pageBreakAfterWordIds}
+          />
         )}
 
         {mode === 'sentence' && (
-          <SentenceTable sentences={visibleSentences} onToggleWrong={handleToggleSentenceWrong} />
+          <SentenceTable
+            sentences={visibleSentences}
+            onToggleWrong={handleToggleSentenceWrong}
+            pageBreakAfterSentenceIds={
+              randomSentenceOrder ? undefined : pageBreakAfterSentenceIds
+            }
+          />
         )}
       </main>
 

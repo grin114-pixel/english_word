@@ -6,6 +6,7 @@
   --surface: #ffffff;
   --text: #1f2330;
   --text-muted: #6b7280;
+  --text-gray-highlight: #b8c0cc;
   --border: #e5e7eb;
   --danger: #ef4444;
   --danger-soft: #fee2e2;
@@ -71,6 +72,7 @@ button {
   padding: calc(env(safe-area-inset-top) + 8px) 20px 8px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -81,9 +83,7 @@ button {
 .app-header-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   cursor: pointer;
   border-radius: 8px;
   margin: -4px;
@@ -100,17 +100,19 @@ button {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  margin-left: auto;
 }
 
 .app-header-add-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background: var(--accent-dark);
   color: white;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(91, 168, 232, 0.35);
@@ -121,25 +123,28 @@ button {
 }
 
 .app-header-list-btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .app-header-list-btn:active {
   background: var(--accent-soft);
+  transform: scale(0.94);
 }
 
 .app-header-refresh-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -157,29 +162,10 @@ button {
   transform: scale(0.94);
 }
 
-.app-header h1 {
-  font-size: 19px;
-  font-weight: 800;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.app-version-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 2px 6px;
-  border-radius: 999px;
-  line-height: 1.2;
-}
-
 .app-header-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -417,6 +403,10 @@ button {
   color: var(--text-muted);
 }
 
+.field-major-gap {
+  margin-top: 18px;
+}
+
 .field-group {
   display: flex;
   gap: 10px;
@@ -445,15 +435,38 @@ textarea:focus {
 }
 
 .form input[type='text']::selection,
-.form textarea::selection {
+.form textarea::selection,
+.bulk-textarea-wrap textarea::selection {
   background: #d1d5db;
   color: var(--text);
 }
 
 .form input[type='text']::-moz-selection,
-.form textarea::-moz-selection {
+.form textarea::-moz-selection,
+.bulk-textarea-wrap textarea::-moz-selection {
   background: #d1d5db;
   color: var(--text);
+}
+
+.bulk-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bulk-textarea-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulk-textarea-wrap textarea {
+  width: 100%;
+}
+
+.text-highlight-gray {
+  color: var(--text-gray-highlight);
 }
 
 .form-error {
@@ -550,6 +563,10 @@ textarea:focus {
   background: var(--danger-soft);
 }
 
+.word-table tbody tr.page-break-after td {
+  border-bottom: 3px solid var(--accent);
+}
+
 .word-table .col-check {
   width: 40px;
   text-align: center;
@@ -572,14 +589,16 @@ textarea:focus {
 }
 
 .word-table .col-word,
-.word-table .col-meaning {
+.word-table .col-meaning,
+.word-table .col-sentence {
   width: calc((100% - 80px) / 2);
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
 .word-table:not(:has(.col-action)) .col-word,
-.word-table:not(:has(.col-action)) .col-meaning {
+.word-table:not(:has(.col-action)) .col-meaning,
+.word-table:not(:has(.col-action)) .col-sentence {
   width: calc((100% - 40px) / 2);
 }
 
@@ -588,6 +607,25 @@ textarea:focus {
   height: 20px;
   accent-color: var(--danger);
   cursor: pointer;
+}
+
+.sentence-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sentence-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.sentence-meaning {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-gray-highlight);
 }
 
 .blind-pill {

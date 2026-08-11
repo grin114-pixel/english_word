@@ -1,13 +1,21 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Modal } from './Modal';
+import { BulkTextarea } from './BulkTextarea';
+import type { ParsedSentence } from '../utils/parseSentenceList';
 import { parseSentenceList } from '../utils/parseSentenceList';
 import { parseWordEntries } from '../utils/parseWordList';
 import type { ParsedWordPair } from '../utils/parseWordList';
 
 interface AddDeckModalProps {
   onClose: () => void;
-  onSubmit: (input: { title: string; words: ParsedWordPair[]; sentences: string[] }) => Promise<void>;
+  onSubmit: (input: {
+    title: string;
+    words: ParsedWordPair[];
+    sentences: ParsedSentence[];
+    wordDraftText: string;
+    sentenceDraftText: string;
+  }) => Promise<void>;
 }
 
 export function AddDeckModal({ onClose, onSubmit }: AddDeckModalProps) {
@@ -38,7 +46,13 @@ export function AddDeckModal({ onClose, onSubmit }: AddDeckModalProps) {
     setSaving(true);
     setError(null);
     try {
-      await onSubmit({ title: title.trim(), words: parsed.items, sentences: parsedSentences });
+      await onSubmit({
+        title: title.trim(),
+        words: parsed.items,
+        sentences: parsedSentences,
+        wordDraftText: bulkText,
+        sentenceDraftText: sentenceText,
+      });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : '저장에 실패했어요.');
@@ -63,30 +77,12 @@ export function AddDeckModal({ onClose, onSubmit }: AddDeckModalProps) {
 
         <label className="field">
           <span className="field-label">단어 + 뜻</span>
-          <textarea
-            placeholder=""
-            value={bulkText}
-            onChange={(e) => setBulkText(e.target.value)}
-            rows={6}
-          />
-          <span className="hint">
-            한 줄에 「단어(구) 뜻」 형식으로 입력하세요. 예: make fun of ~을 놀리다, 비웃다
-            {parsed.items.length > 0 && ` (${parsed.items.length}개 인식됨)`}
-          </span>
+          <BulkTextarea value={bulkText} onChange={setBulkText} rows={6} />
         </label>
 
-        <label className="field">
-          <span className="field-label">문장 (선택)</span>
-          <textarea
-            placeholder=""
-            value={sentenceText}
-            onChange={(e) => setSentenceText(e.target.value)}
-            rows={6}
-          />
-          <span className="hint">
-            단어와 별개로, 한 줄에 문장 하나씩 입력하세요.
-            {parsedSentences.length > 0 && ` (${parsedSentences.length}개 인식됨)`}
-          </span>
+        <label className="field field-major-gap">
+          <span className="field-label">문장 + 해석</span>
+          <BulkTextarea value={sentenceText} onChange={setSentenceText} rows={6} showGrayToolbar={false} />
         </label>
 
         {error && <p className="form-error">{error}</p>}

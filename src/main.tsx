@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 
+import { warmSpeechSynthesis } from './utils/pronunciation';
+
 const APP_VERSION = '2026-08-10-v2';
 
 async function clearStalePwaCache(): Promise<boolean> {
@@ -34,6 +36,8 @@ async function bootstrap() {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map((registration) => registration.unregister()));
   }
+
+  warmSpeechSynthesis();
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

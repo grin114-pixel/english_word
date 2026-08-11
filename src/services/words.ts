@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Word } from '../types';
 import { normalizeStoredWordPair } from '../utils/parseWordList';
+import { hasGrayMarkers, normalizeGrayWordPair } from '../utils/grayText';
 import type { WordTestMode } from '../utils/wrongByMode';
 import { wrongFieldForMode } from '../utils/wrongByMode';
 
@@ -8,6 +9,18 @@ const WORD_SELECT =
   'id, deck_id, user_id, word, meaning, is_wrong_word, is_wrong_meaning, sort_order, created_at';
 
 function repairWordIfNeeded(word: Word): Word {
+  if (hasGrayMarkers(word.word) || hasGrayMarkers(word.meaning)) {
+    const reparsed = normalizeGrayWordPair(word.word, word.meaning);
+    if (!reparsed) return word;
+
+    if (reparsed.word === word.word && reparsed.meaning === word.meaning) {
+      return word;
+    }
+
+    void updateWord(word.id, reparsed);
+    return { ...word, word: reparsed.word, meaning: reparsed.meaning };
+  }
+
   const normalized = normalizeStoredWordPair(word.word, word.meaning);
   if (normalized.word === word.word && normalized.meaning === word.meaning) {
     return word;
@@ -110,9 +123,50 @@ export async function updateWord(
   if (error) throw error;
 }
 
+async function updateWordWithSortOrder(
+  wordId: string,
+  data: { word: string; meaning: string },
+  sortOrder: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from('words')
+    .update({
+      word: data.word.trim(),
+      meaning: data.meaning.trim(),
+      sort_order: sortOrder,
+    })
+    .eq('id', wordId);
+
+  if (error) throw error;
+}
+
 async function updateWordSortOrder(wordId: string, sortOrder: number): Promise<void> {
   const { error } = await supabase.from('words').update({ sort_order: sortOrder }).eq('id', wordId);
   if (error) throw error;
+}
+
+async function deleteWords(wordIds: string[]): Promise<void> {
+  if (wordIds.length === 0) return;
+  const { error } = await supabase.from('words').delete().in('id', wordIds);
+  if (error) throw error;
+}
+
+async function createWordsAtOrders(
+  deckId: string,
+  items: { word: string; meaning: string; sortOrder: number }[],
+): Promise<Word[]> {
+  if (items.length === 0) return [];
+
+  const rows = items.map(({ word, meaning, sortOrder }) => ({
+    deck_id: deckId,
+    word: word.trim(),
+    meaning: meaning.trim(),
+    sort_order: sortOrder,
+  }));
+
+  const { data, error } = await supabase.from('words').insert(rows).select(WORD_SELECT);
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function reorderWords(_deckId: string, orderedIds: string[]): Promise<void> {
@@ -127,30 +181,44 @@ export async function syncDeckWords(
   existingWords: Word[],
   newWords: { word: string; meaning: string }[],
 ): Promise<Word[]> {
-  const result: Word[] = [];
-  const maxLen = Math.max(existingWords.length, newWords.length);
+  const result: Word[] = new Array(newWords.length);
+  const updateTasks: Promise<void>[] = [];
+  const deleteIds: string[] = [];
+  const createItems: { word: string; meaning: string; sortOrder: number }[] = [];
 
-  for (let i = 0; i < maxLen; i++) {
-    const existing = existingWords[i];
+  for (let i = newWords.length; i < existingWords.length; i++) {
+    deleteIds.push(existingWords[i].id);
+  }
+
+  for (let i = 0; i < newWords.length; i++) {
     const incoming = newWords[i];
+    const word = incoming.word.trim();
+    const meaning = incoming.meaning.trim();
+    const existing = existingWords[i];
 
-    if (existing && incoming) {
-      await updateWord(existing.id, incoming);
-      await updateWordSortOrder(existing.id, i);
-      result.push({
-        ...existing,
-        word: incoming.word.trim(),
-        meaning: incoming.meaning.trim(),
-        sort_order: i,
-      });
-    } else if (existing && !incoming) {
-      await deleteWord(existing.id);
-    } else if (!existing && incoming) {
-      const created = await createWord({ deckId, ...incoming, sortOrder: i });
-      result.push(created);
+    if (existing) {
+      result[i] = { ...existing, word, meaning, sort_order: i };
+      if (existing.word !== word || existing.meaning !== meaning || existing.sort_order !== i) {
+        updateTasks.push(updateWordWithSortOrder(existing.id, { word, meaning }, i));
+      }
+    } else {
+      createItems.push({ word, meaning, sortOrder: i });
     }
   }
 
+  const syncTasks: Promise<unknown>[] = [...updateTasks];
+  if (deleteIds.length > 0) syncTasks.push(deleteWords(deleteIds));
+  if (createItems.length > 0) {
+    syncTasks.push(
+      createWordsAtOrders(deckId, createItems).then((created) => {
+        for (const item of created) {
+          result[item.sort_order] = item;
+        }
+      }),
+    );
+  }
+
+  await Promise.all(syncTasks);
   return result;
 }
 

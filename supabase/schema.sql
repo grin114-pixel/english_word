@@ -6,6 +6,8 @@ create table if not exists public.decks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
   title text not null,
+  word_draft_text text,
+  sentence_draft_text text,
   created_at timestamptz not null default now()
 );
 
@@ -28,6 +30,7 @@ create table if not exists public.sentences (
   deck_id uuid not null references public.decks(id) on delete cascade,
   user_id uuid,
   text text not null,
+  meaning text not null default '',
   is_wrong boolean not null default false,
   sort_order integer not null default 0,
   created_at timestamptz not null default now()

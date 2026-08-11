@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { EditDeckModal } from './EditDeckModal';
 import { EditIcon } from './EditIcon';
 import { Modal } from './Modal';
-import { deleteDeck, fetchDecks, updateDeckTitle } from '../services/decks';
-import { fetchSentences, syncDeckSentences } from '../services/sentences';
-import { fetchWords, syncDeckWords } from '../services/words';
-import type { Deck } from '../types';
+import { deleteDeck, fetchDecks, updateDeck } from '../services/decks';
+import { syncDeckSentences } from '../services/sentences';
+import { syncDeckWords } from '../services/words';
+import type { Deck, Sentence, Word } from '../types';
+import type { ParsedSentence } from '../utils/parseSentenceList';
 import type { ParsedWordPair } from '../utils/parseWordList';
 import { supabase } from '../lib/supabase';
 
@@ -71,17 +72,21 @@ export function DeckListModal({ onClose, onDeckUpdated }: DeckListModalProps) {
   const handleEditDeck = async (input: {
     title: string;
     words: ParsedWordPair[];
-    sentences: string[];
+    sentences: ParsedSentence[];
+    existingWords: Word[];
+    existingSentences: Sentence[];
+    wordDraftText: string;
+    sentenceDraftText: string;
   }) => {
     if (!editingDeck) return;
-    const [existingWords, existingSentences] = await Promise.all([
-      fetchWords(editingDeck.id),
-      fetchSentences(editingDeck.id),
-    ]);
-    await updateDeckTitle(editingDeck.id, input.title);
+    await updateDeck(editingDeck.id, {
+      title: input.title,
+      wordDraftText: input.wordDraftText,
+      sentenceDraftText: input.sentenceDraftText,
+    });
     await Promise.all([
-      syncDeckWords(editingDeck.id, existingWords, input.words),
-      syncDeckSentences(editingDeck.id, existingSentences, input.sentences),
+      syncDeckWords(editingDeck.id, input.existingWords, input.words),
+      syncDeckSentences(editingDeck.id, input.existingSentences, input.sentences),
     ]);
     await loadDecks();
     onDeckUpdated?.();
