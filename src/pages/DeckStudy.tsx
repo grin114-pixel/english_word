@@ -268,7 +268,7 @@ export function DeckStudy({
   return (
     <div className="page">
       <div className="deck-toolbar-wrap">
-        <div className="sub-header">
+        <div className={`sub-header${latest ? ' sub-header-main' : ''}`}>
           {!latest && (
             <button type="button" className="icon-btn" onClick={() => navigate('/')} aria-label="뒤로가기">
               ←

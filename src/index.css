@@ -83,7 +83,9 @@ button {
 .app-header-brand {
   display: flex;
   align-items: center;
-  flex: 0 0 auto;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
   cursor: pointer;
   border-radius: 8px;
   margin: -4px;
@@ -170,6 +172,20 @@ button {
   flex-shrink: 0;
 }
 
+.app-header-title-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-header-title {
+  display: block;
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 1.2;
+  font-size: 17px;
+  color: var(--accent-dark);
+}
+
 /* Sub header (back + deck title), sticks right below the fixed app header */
 
 .deck-toolbar-wrap {
@@ -192,6 +208,23 @@ button {
   font-size: 18px;
   font-weight: 800;
   margin: 0;
+}
+
+.sub-header-main {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+}
+
+.sub-header-main h2 {
+  grid-column: 2;
+  flex: unset;
+  text-align: center;
+}
+
+.sub-header-main .icon-btn {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .truncate {
@@ -232,7 +265,7 @@ button {
 }
 
 .deck-item {
-  background: var(--surface);
+  background: var(--accent-soft);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px 18px;
